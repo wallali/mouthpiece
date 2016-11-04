@@ -19,7 +19,7 @@
 const assert = require('assert');
 const context_reset = require('../actions/context_reset');
 
-describe('context_reset', function() {
+describe('context reset', function() {
   var actionReset = context_reset();
   var conversation_result = {};
 

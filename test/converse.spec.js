@@ -154,7 +154,7 @@ describe('converse', function() {
     config.prepare = null;
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', null, function(err, result) {
       assert(!prior1.called);
       assert(!prior2.called);
       assert(converser.calledOnce);
