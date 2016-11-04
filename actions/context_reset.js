@@ -23,19 +23,23 @@ module.exports = create;
 
 //--
 
-function create(config) {
+function create(keep) {
 
-  var keepers = config.keep || [];
+  var keepers = keep || [];
+
+  if (_.isString(keepers)) {
+    keepers = _.split(keep, /\s*,\s*/);
+  }
 
   return actionReset;
 
   //--
 
   function actionReset(verb, conversation_result, cb) {
-    process.nextTick(function() {
-      conversation_result.context = _.pick(conversation_result.context, keepers);
-      debug('Context reset');
-      cb(null, conversation_result);
-    });
+    conversation_result.context = _.pick(conversation_result.context, keepers);
+    debug('Context reset');
+    process.nextTick(() =>
+      cb(null, conversation_result)
+    );
   }
 }
