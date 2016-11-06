@@ -99,8 +99,11 @@ function create(config) {
     function postConverse(converse_result) {
       let action_verbs = converse_result.context.do || [];
       let replay = converse_result.context.replay || false;
+      let loop = converse_result.context.loop || false;
+
       converse_result.context.do = null;
       converse_result.context.replay = null;
+      converse_result.context.loop = null;
 
       if (_.isString(action_verbs)) {
         action_verbs = _.split(action_verbs, /\s*,\s*/);
@@ -118,6 +121,11 @@ function create(config) {
         if (replay) {
           debug('Replaying...');
           return converse(prev_verb_result.utterance, prev_verb_result.context, cb);
+        }
+
+        if (loop) {
+          debug('Looping...');
+          return startConverse(prev_verb_result.utterance, prev_verb_result.context);
         }
 
         converse.events.emit('response', prev_verb_result);

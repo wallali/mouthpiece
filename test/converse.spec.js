@@ -153,6 +153,40 @@ describe('converse', function () {
     });
   });
 
+  it('Completes looping flow with calls in correct order', function (done) {
+    converse = conversation_builder(config);
+    converse_result.context.loop = true;
+    converse('say something', {}, function (err, result) {
+      assert(prior1.calledOnce);
+      assert(prior2.calledOnce);
+      assert(converser.calledTwice);
+      assert(action1.calledOnce);
+      assert(action2.calledOnce);
+
+      assert(!err);
+      assert(result);
+
+      assert(prior2.calledAfter(prior1));
+
+      assert(prior1.alwaysCalledWith('say something', {}));
+      assert(prior2.alwaysCalledWith('user says', {}));
+      
+      assert(converser.alwaysCalledWith('user says'));
+
+      assert(action1.alwaysCalledWith('act1', converse_result));
+      assert(action2.alwaysCalledWith('act2', converse_result));
+
+      assert.strictEqual(converse_result.utterance, 'user says');
+      assert(!converse_result.context.do);
+      assert(!converse_result.context.replay);
+      assert(!converse_result.context.loop);
+
+      done();
+
+    });
+  });
+
+
   it('Completes flow without priors', function (done) {
     config.prepare = null;
     converse = conversation_builder(config);

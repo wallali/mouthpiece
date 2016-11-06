@@ -88,14 +88,19 @@ This is the format of the result expected by the onward flow:
 var converser_result = {
   context: {
     do: 'anAction, anotherAction',
-    replay: false
+    replay: false,
+    loop: false
   }
 };
 ```
 
 The returned context can also have two special properties that direct what happens next:
 * `do` - This can be array of strings or a comma separated string. Each string is a key into `config.actions`. Actions corresponding to each key are then executed in order with this conversation result passed in.
-* `replay` - This is a boolean which, if set to `true`, will cause the conversation flow to be re-entered running it a second time in its entiriety, but with the new context taken from this conversation result. If `converse_result.utterance` is set it will be used as the utterance for the replay round, otherwise the last user utterance is used.
+* `loop` - This boolean if set to `true` will cause the converser service to be called again running the flow a second time but with the new context taken from this conversation result. 
+* `replay` - This boolean if set to `true` will cause the conversation flow to be re-entered running it a second time in its entiriety including any prepare operations, but with the new context taken from this conversation result. 
+
+If `converser_result.utterance` is set it will be used as the utterance during loop and replay, otherwise the last user utterance is used. If `converser_result.utterance` is not set, it is set to the last user utterance before calling any actions.
+
 
 ### Dealing with different converser result formats
 
