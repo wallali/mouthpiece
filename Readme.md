@@ -40,7 +40,7 @@ converse('users utterance', context, function(err, result){
 The config is used to setup the process flow as follows:
 
 * `config.prepare` - An Array of operations to run before calling the converser, optional. 
-* `config.converser` - The converser function that handles the agents dialog.
+* `config.converser` - The main converser function that handles the agents dialog.
 * `config.actions` - An action map used to carry out actions in the converser output, optional.
 
 Prepare operation signature:
@@ -77,7 +77,12 @@ function converser(utterance, context, cb){
 }
 ```
 
-The converser on sucessful completion must return a result object with the `context` property set to the updated context.
+Converser result
+----------------
+
+The converser on sucessful completion must return a result object with the `context` property set to the updated context. 
+
+This is the format of the result expected by the onward flow:
 
 ```javascript
 var converser_result = {
@@ -88,9 +93,47 @@ var converser_result = {
 };
 ```
 
-The returned context can have two special properties that direct what happens next:
+The returned context can also have two special properties that direct what happens next:
 * `do` - This can be array of strings or a comma separated string. Each string is a key into `config.actions`. Actions corresponding to each key are then executed in order with this conversation result passed in.
 * `replay` - This is a boolean which, if set to `true`, will cause the conversation flow to be re-entered running it a second time in its entiriety, but with the new context taken from this conversation result. If `converse_result.utterance` is set it will be used as the utterance for the replay round, otherwise the last user utterance is used.
+
+### Dealing with different converser result formats
+
+If the converser service you are using does not return a result in the expected format described above, the onward flow will break and cause errors. There are two ways to address this.
+
+#### Use a wrapper function
+You can wrap the non-conforming converser in a function that will take the immediate output of the converser and transform it to the form described above:
+
+```javascript
+function converser_wrapper(utterance, context, cb){
+  console.log('Carrying out conversation');
+  converser(utterance, context, function(err, result){
+    if(err) return cb(err);
+    
+    // If result is not in the expected format this is your opportunity to correct it.
+    var formatted_result = result; 
+    
+    cb(null, formatted_result);
+  });
+}
+
+config.converser = converser_wrapper;
+```
+This approach is suitable when the format of the result is very different from the expected one and/or an asynchronous operation is needed to transform the result into the expected format.
+
+#### Provide `converser.transformResult()`
+You can provide a `transformResult()` operation on your converser, which will be called before passing its result onward into the flow. Your `transformResult()` will have the opportunity to transform the result into the format expected by the onward flow.
+
+```javascript
+converser.transformResult = function(result){
+  // If result is not in the expected format this is your opportunity to correct it.
+  var formatted_result = result; 
+  return formatted_result;
+}
+
+config.converser = converser;
+```
+This approach is light-weight and works well when the result only needs minor tweaks to transform to the expected format and this can be done synchronously.
 
 
 Running tests
