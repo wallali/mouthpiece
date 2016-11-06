@@ -20,7 +20,7 @@ var _ = require('lodash');
 const async = require('async');
 const events = require('events');
 const debug = require('debug')('mouthpiece:converse');
-const noop = function() {};
+const noop = function () {};
 
 exports = module.exports = create;
 
@@ -28,7 +28,7 @@ exports = module.exports = create;
 
 function skipAction(verb, conversation_result, cb) {
   debug('No action was mapped to ' + verb + ' in the config.');
-  process.nextTick(function() {
+  process.nextTick(function () {
     cb(null, conversation_result);
   });
 }
@@ -53,7 +53,7 @@ function create(config) {
   //--
 
   function converse(utterance, context, cb) {
-    if (typeof(context) === 'function') {
+    if (typeof (context) === 'function') {
       cb = context;
       context = {};
     }
@@ -64,7 +64,7 @@ function create(config) {
 
     prior.unshift(async.constant(utterance, context));
 
-    async.waterfall(prior, function(err, utterance, context) {
+    async.waterfall(prior, function (err, utterance, context) {
       if (err) return cb(err);
 
       debug('Completed all prior operations. Starting converse...');
@@ -74,22 +74,29 @@ function create(config) {
     //--
 
     function startConverse(utterance, context) {
-      converser(utterance, context, function(err, converse_result) {
-        converse.events.emit('message', utterance, context, converse_result);
-        if (err) return cb(err);
+      converser(utterance, context, function (err, converse_result) {
+        if (err) {
+          converse.events.emit('message', utterance, context);
+          return cb(err);
+        }
 
-        debug('Completed converse, starting post-converse operations...');
-        postConverse(converse_result, utterance);
+        if (converser.transformResult && typeof (converser.transformResult) === 'function') {
+          converse_result = converser.transformResult(converse_result);
+        }
+
+        converse.events.emit('message', utterance, context, converse_result);
+
+        if (!converse_result.context) {
+          return cb(new Error('Converser must return an updated context back in the result.'));
+        }
+
+        converse_result.utterance = converse_result.utterance || utterance;
+
+        postConverse(converse_result);
       });
     }
 
-    function postConverse(converse_result, utterance) {
-      if (!converse_result.context) {
-        return cb(new Error('Converser must return an updated context back in the result.'));
-      }
-
-      converse_result.input = converse_result.input || utterance;
-
+    function postConverse(converse_result) {
       let action_verbs = converse_result.context.do || [];
       let replay = converse_result.context.replay || false;
       converse_result.context.do = null;
@@ -103,14 +110,14 @@ function create(config) {
 
       var prev_verb_result = converse_result;
 
-      async.eachSeries(action_verbs, doVerb, function(err) {
+      async.eachSeries(action_verbs, doVerb, function (err) {
         if (err) return cb(err);
 
         debug('Done post-converse.');
 
         if (replay) {
           debug('Replaying...');
-          return converse(prev_verb_result.input, prev_verb_result.context, cb);
+          return converse(prev_verb_result.utterance, prev_verb_result.context, cb);
         }
 
         converse.events.emit('response', prev_verb_result);
@@ -121,7 +128,7 @@ function create(config) {
 
       function doVerb(verb, verb_cb) {
         let op = actions[verb] || skipAction;
-        op(verb, prev_verb_result, function(op_err, op_result) {
+        op(verb, prev_verb_result, function (op_err, op_result) {
           if (op_err) return verb_cb(op_err);
 
           prev_verb_result = op_result;

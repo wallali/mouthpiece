@@ -20,21 +20,21 @@ const assert = require('assert');
 const sinon = require('sinon');
 const conversation_builder = require('../converse');
 
-describe('converse', function() {
+describe('converse', function () {
 
   var initial_context = {};
   var utterance = '';
 
-  var prior1 = sinon.stub();
-  var prior2 = sinon.stub();
+  const prior1 = sinon.stub();
+  const prior2 = sinon.stub();
 
   var converse_result = {
     context: {}
   };
 
-  var converser = sinon.stub();
-  var action1 = sinon.stub();
-  var action2 = sinon.stub();
+  const converser = sinon.stub();
+  const action1 = sinon.stub();
+  const action2 = sinon.stub();
 
   var config = {
     prepare: [],
@@ -44,7 +44,7 @@ describe('converse', function() {
 
   var converse;
 
-  beforeEach(function() {
+  beforeEach(function () {
     initial_context = {};
     utterance = 'user says';
     converse_result = {
@@ -61,6 +61,7 @@ describe('converse', function() {
     action2.callsArgWith(2, null, converse_result);
 
     converser.callsArgWith(2, null, converse_result);
+    converser.transformResult = null;
 
     config = {
       prepare: [prior1, prior2],
@@ -74,7 +75,7 @@ describe('converse', function() {
     converse = conversation_builder(config);
   });
 
-  afterEach(function() {
+  afterEach(function () {
     converser.reset();
     action1.reset();
     action2.reset();
@@ -82,13 +83,13 @@ describe('converse', function() {
     prior2.reset();
   });
 
-  it('defines event emitter', function() {
+  it('defines event emitter', function () {
     assert(converse.events);
   });
 
-  it('Completes flow with calls in correct order', function(done) {
+  it('Completes flow with calls in correct order', function (done) {
     converse = conversation_builder(config);
-    converse('say something', {}, function(err, result) {
+    converse('say something', {}, function (err, result) {
       assert(prior1.calledOnce);
       assert(prior2.calledOnce);
       assert(converser.calledOnce);
@@ -110,6 +111,7 @@ describe('converse', function() {
       assert(action1.alwaysCalledWith('act1', converse_result));
       assert(action2.alwaysCalledWith('act2', converse_result));
 
+      assert.strictEqual(converse_result.utterance, 'user says');
       assert(!converse_result.context.do);
       assert(!converse_result.context.replay);
 
@@ -118,10 +120,10 @@ describe('converse', function() {
     });
   });
 
-  it('Completes replay flow with calls in correct order', function(done) {
+  it('Completes replay flow with calls in correct order', function (done) {
     converse = conversation_builder(config);
     converse_result.context.replay = true;
-    converse('say something', {}, function(err, result) {
+    converse('say something', {}, function (err, result) {
       assert(prior1.calledTwice);
       assert(prior2.calledTwice);
       assert(converser.calledTwice);
@@ -142,6 +144,7 @@ describe('converse', function() {
       assert(action1.alwaysCalledWith('act1', converse_result));
       assert(action2.alwaysCalledWith('act2', converse_result));
 
+      assert.strictEqual(converse_result.utterance, 'user says');
       assert(!converse_result.context.do);
       assert(!converse_result.context.replay);
 
@@ -150,11 +153,11 @@ describe('converse', function() {
     });
   });
 
-  it('Completes flow without priors', function(done) {
+  it('Completes flow without priors', function (done) {
     config.prepare = null;
     converse = conversation_builder(config);
 
-    converse('say something', null, function(err, result) {
+    converse('say something', null, function (err, result) {
       assert(!prior1.called);
       assert(!prior2.called);
       assert(converser.calledOnce);
@@ -168,11 +171,11 @@ describe('converse', function() {
     });
   });
 
-  it('Completes flow without actions', function(done) {
+  it('Completes flow without actions', function (done) {
     converse_result.context.do = null;
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(prior1.called);
       assert(prior2.called);
       assert(converser.calledOnce);
@@ -184,7 +187,7 @@ describe('converse', function() {
     });
   });
 
-  it('Passes context from prior 1 to prior 2 and so on', function(done) {
+  it('Passes context from prior 1 to prior 2 and so on', function (done) {
 
     prior1.callsArgWith(2, null, utterance, {
       prior1: true
@@ -196,7 +199,7 @@ describe('converse', function() {
     converse_result.context.do = null;
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(prior1.called);
       assert(prior2.called);
       assert(converser.calledOnce);
@@ -218,7 +221,7 @@ describe('converse', function() {
     });
   });
 
-  it('Passes result from action 1 to action 2 and so on', function(done) {
+  it('Passes result from action 1 to action 2 and so on', function (done) {
     config.prepare = null;
     converse = conversation_builder(config);
 
@@ -229,7 +232,7 @@ describe('converse', function() {
       action2: true
     });
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(converser.calledOnce);
       assert(action1.calledOnce);
       assert(action2.calledOnce);
@@ -250,11 +253,11 @@ describe('converse', function() {
     });
   });
 
-  it('Ignores unknown actions', function(done) {
+  it('Ignores unknown actions', function (done) {
     converse_result.context.do = ['act1', 'someact', '', 'act2'];
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(prior1.called);
       assert(prior2.called);
       assert(converser.calledOnce);
@@ -268,12 +271,12 @@ describe('converse', function() {
     });
   });
 
-  it('Respects prior order', function(done) {
+  it('Respects prior order', function (done) {
     config.actions = null;
     config.prepare = [prior2, prior1];
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(prior1.called);
       assert(prior2.called);
       assert(converser.calledOnce);
@@ -288,13 +291,13 @@ describe('converse', function() {
     });
   });
 
-  it('Respects action order', function(done) {
+  it('Respects action order', function (done) {
     config.prepare = null;
     converse_result.context.do = ['act2', 'act1'];
 
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(!prior1.called);
       assert(!prior2.called);
       assert(converser.calledOnce);
@@ -310,13 +313,13 @@ describe('converse', function() {
     });
   });
 
-  it('Allows action as comma seperated string', function(done) {
+  it('Allows action as comma seperated string', function (done) {
     config.prepare = null;
     converse_result.context.do = 'act2 ,  act1';
 
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(converser.calledOnce);
       assert(action1.calledOnce);
       assert(action2.calledOnce);
@@ -332,12 +335,12 @@ describe('converse', function() {
     });
   });
 
-  it('Error in prior stops flow', function(done) {
+  it('Error in prior stops flow', function (done) {
 
     prior1.callsArgWith(2, 'error');
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(prior1.calledOnce);
       assert(!prior2.called);
       assert(!converser.called);
@@ -353,12 +356,12 @@ describe('converse', function() {
     });
   });
 
-  it('Error in action stops flow', function(done) {
+  it('Error in action stops flow', function (done) {
 
     action1.callsArgWith(2, 'error');
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(prior1.calledOnce);
       assert(prior2.calledOnce);
       assert(converser.calledOnce);
@@ -377,12 +380,12 @@ describe('converse', function() {
     });
   });
 
-  it('Error in converser stops flow', function(done) {
+  it('Error in converser stops flow', function (done) {
 
     converser.callsArgWith(2, 'error');
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(prior1.calledOnce);
       assert(prior2.calledOnce);
       assert(converser.calledOnce);
@@ -398,12 +401,31 @@ describe('converse', function() {
     });
   });
 
-  it('Missing context in converser result stops flow', function(done) {
+  it('Allows converser to transform results', function (done) {
+    config.prepare = null;
+    converse_result.context.do = null;
+    converse = conversation_builder(config);
+    converser.transformResult = sinon.stub().returns(converse_result);
+
+    converse('say something', null, function (err, result) {
+      assert(converser.calledOnce);
+      assert(converser.transformResult.calledOnce);
+      assert(converser.transformResult.calledWithExactly(converse_result));
+      assert(converser.transformResult.calledAfter(converser));
+
+      assert(!err);
+      assert(result);
+
+      done();
+    });
+  });
+
+  it('Missing context in converser result stops flow', function (done) {
 
     converser.callsArgWith(2, null, {});
     converse = conversation_builder(config);
 
-    converse('say something', function(err, result) {
+    converse('say something', function (err, result) {
       assert(prior1.calledOnce);
       assert(prior2.calledOnce);
       assert(converser.calledOnce);

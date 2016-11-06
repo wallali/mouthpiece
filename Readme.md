@@ -90,7 +90,7 @@ var converser_result = {
 
 The returned context can have two special properties that direct what happens next:
 * `do` - This can be array of strings or a comma separated string. Each string is a key into `config.actions`. Actions corresponding to each key are then executed in order with this conversation result passed in.
-* `replay` - This is a boolean which, if set to `true`, will cause the conversation flow to be re-entered running it a second time in its entiriety, but with the new context taken from this conversation result. If `converse_result.input` is set it will be used as the utterance for the replay round, otherwise the last user utterance is used.
+* `replay` - This is a boolean which, if set to `true`, will cause the conversation flow to be re-entered running it a second time in its entiriety, but with the new context taken from this conversation result. If `converse_result.utterance` is set it will be used as the utterance for the replay round, otherwise the last user utterance is used.
 
 
 Running tests
